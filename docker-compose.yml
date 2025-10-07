@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Сервис базы данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: poster_db
+    # Переменные окружения для создания БД и пользователя
+    env_file:
+      - .env
+    # Пробрасываем порт на локальную машину (опционально, для отладки)
+    ports:
+      - "5433:5432"
+    # Сохраняем данные БД между перезапусками
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    # Проверка готовности БД перед запуском бота
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Сервис Telegram бота
+  bot:
+    container_name: poster_bot
+    # Собираем образ из локального Dockerfile
+    build: .
+    # Передаем все переменные из .env в контейнер
+    env_file:
+      - .env
+    # Запускаем бота только после того, как БД будет готова
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+volumes:
+  postgres_data:
