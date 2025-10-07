@@ -15,8 +15,6 @@ from ..keyboards import inline as kb
 from ..utils.scheduler import send_broadcast, send_scheduled_post
 from ..callbacks.callbacks import ScheduledPostAction, ChatPostsAction
 
-# Настройка логирования
-# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     filename='bot.log',
@@ -24,7 +22,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Хелпер-функция для корректного отображения имени чата
 def get_chat_display_name(chat: Chat) -> str:
     """Возвращает лучшее имя для отображения: 'Название (@username)' или другое."""
     title = chat.title
@@ -43,6 +40,15 @@ router = Router()
 router.message.filter(AdminFilter(), F.chat.type == "private")
 router.callback_query.filter(AdminFilter(), F.message.chat.type == "private")
 
+@router.message(
+    lambda message: not message.text.startswith(('/start', '/admin')),
+    ~StateFilter(*ScheduledPost.__all_states__, *OneTimePost.__all_states__, *ChatManagement.__all_states__)
+)
+async def handle_any_admin_message(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Добро пожаловать в админ-панель!", reply_markup=kb.admin_menu_keyboard())
+    logger.info(f"Admin {message.from_user.id} sent message '{message.text}' and redirected to admin panel")
+
 @router.message(Command("admin"))
 async def cmd_admin_panel(message: Message, state: FSMContext):
     await state.clear()
@@ -58,7 +64,6 @@ async def back_to_main_menu(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("Добро пожаловать в админ-панель!", reply_markup=kb.admin_menu_keyboard())
     await callback.answer()
 
-# --- Блок: Одноразовая рассылка ---
 
 @router.callback_query(F.data == "one_time_post_menu")
 async def one_time_post_menu(callback: CallbackQuery):
@@ -178,7 +183,6 @@ async def stop_mailing(callback: CallbackQuery, scheduler: AsyncIOScheduler):
         await db.update_post_status('stopped')
         await callback.answer("Рассылка не была запущена.", show_alert=True)
 
-# --- Блок: Управление чатами ---
 
 @router.callback_query(F.data == "manage_chats")
 async def manage_chats_menu(callback: CallbackQuery):
@@ -264,7 +268,6 @@ async def show_chat_list(callback: CallbackQuery, bot: Bot):
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb.chat_management_keyboard())
     await callback.answer()
 
-# --- Блок: Рассылки по графику ---
 
 @router.callback_query(F.data == "list_chats_with_posts")
 async def list_chats_with_posts(callback: CallbackQuery, bot: Bot):
@@ -367,7 +370,7 @@ async def skip_scheduled_photo(callback: CallbackQuery, state: FSMContext):
     await state.update_data(photo_id=None)
     await state.set_state(ScheduledPost.waiting_for_chat_ids)
     await callback.message.edit_text(
-        "<b>Шаг 4/5:</b> Фото пропущено. Теперь пришлите ID или username чатов (@username), через запятую.\n\nНапример: <code>@mychannel, -100123456, @mygroup</code>", parse_mode="HTML")
+        "<b>Шаг 4/5:</b> Фото пропущено. Теперь пришлите ID или username чатов (@username), через запятую.\n\nНапример: <code>@mychannel, -100123456</code>", parse_mode="HTML")
     await callback.answer()
 
 @router.message(ScheduledPost.waiting_for_chat_ids)
@@ -432,7 +435,6 @@ async def process_pin_decision(callback: CallbackQuery, state: FSMContext, sched
     data = await state.get_data()
     logger.info(f"Pin decision - callback.data: {callback.data}, state data: {data}")
     
-    # Проверка наличия всех необходимых ключей
     required_keys = ['job_name', 'text', 'photo_id', 'chat_ids', 'cron_hour', 'cron_minute']
     missing_keys = [key for key in required_keys if key not in data]
     if missing_keys:
@@ -539,15 +541,14 @@ async def toggle_scheduled_post(callback: CallbackQuery, scheduler: AsyncIOSched
     await db.update_scheduled_post_status(job_name, new_status)
     await callback.answer(msg, show_alert=True)
 
-    updated_post = await db.get_scheduled_post_by_name(job_name)
     await callback.message.delete()
-    reply_markup = kb.scheduled_post_details_keyboard(job_name, updated_post['status'], chat_id)
+    reply_markup = kb.scheduled_post_details_keyboard(job_name, new_status, chat_id)
     
-    status_icon = "✅ Активна" if updated_post['status'] == 'active' else "⏸️ На паузе"
-    pin_status = "🔇 Да, без уведомления" if updated_post.get('pin_silent') else ("✅ Да" if updated_post.get('pin_message') else "❌ Нет")
-    times_list = [f"{int(h):02d}:{int(m):02d}" for h in updated_post['cron_hour'].split(',') for m in updated_post['cron_minute'].split(',')]
+    status_icon = "✅ Активна" if new_status == 'active' else "⏸️ На паузе"
+    pin_status = "🔇 Да, без уведомления" if post.get('pin_silent') else ("✅ Да" if post.get('pin_message') else "❌ Нет")
+    times_list = [f"{int(h):02d}:{int(m):02d}" for h in post['cron_hour'].split(',') for m in post['cron_minute'].split(',')]
     times = ", ".join(sorted(times_list))
-    chats = [get_chat_display_name(await bot.get_chat(cid)) for cid in updated_post.get('chat_ids', [])]
+    chats = [get_chat_display_name(await bot.get_chat(cid)) for cid in post.get('chat_ids', [])]
     chats_str = ", ".join(chats)
     
     text = (
@@ -556,11 +557,11 @@ async def toggle_scheduled_post(callback: CallbackQuery, scheduler: AsyncIOSched
         f"<b>Закрепить:</b> {pin_status}\n"
         f"<b>Время (UTC):</b> {times}\n"
         f"<b>Чаты:</b> {chats_str}\n\n"
-        f"{updated_post.get('text', '')}"
+        f"{post.get('text', '')}"
     )
     
-    if updated_post.get('photo_id'):
-        await bot.send_photo(callback.from_user.id, updated_post['photo_id'], caption=text, reply_markup=reply_markup, parse_mode="HTML")
+    if post.get('photo_id'):
+        await bot.send_photo(callback.from_user.id, post['photo_id'], caption=text, reply_markup=reply_markup, parse_mode="HTML")
     else:
         await callback.message.answer(text, reply_markup=reply_markup, parse_mode="HTML")
 

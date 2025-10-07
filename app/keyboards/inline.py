@@ -160,6 +160,5 @@ def pin_message_keyboard():
     kb.button(text="✅ Да, закрепить", callback_data="pin_yes")
     kb.button(text="🔇 Закрепить без уведомления", callback_data="pin_silent")
     kb.button(text="❌ Нет, не надо", callback_data="pin_no")
-    kb.button(text="⬅️ Назад", callback_data="back_to_scheduled_menu")
     kb.adjust(1)
     return kb.as_markup()

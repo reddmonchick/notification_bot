@@ -4,7 +4,6 @@ from config import settings
 from datetime import datetime
 import logging
 
-# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     filename='bot.log',
@@ -60,7 +59,6 @@ async def initialize_db():
                 status VARCHAR(10) DEFAULT 'paused'
             )
         """)
-        # Миграция для добавления столбца pin_silent, если он ещё не существует
         await conn.execute("""
             ALTER TABLE scheduled_posts
             ADD COLUMN IF NOT EXISTS pin_silent BOOLEAN DEFAULT FALSE
