@@ -44,7 +44,8 @@ async def initialize_db():
                 chat_id BIGINT PRIMARY KEY
             )
         """)
-
+        
+        # 👇 ПОЛНЫЙ И КОРРЕКТНЫЙ ЗАПРОС
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS scheduled_posts (
                 id SERIAL PRIMARY KEY,
@@ -54,14 +55,10 @@ async def initialize_db():
                 chat_ids BIGINT[],
                 cron_hour TEXT,
                 cron_minute TEXT,
+                status VARCHAR(10) DEFAULT 'active',
                 pin_message BOOLEAN DEFAULT FALSE,
-                pin_silent BOOLEAN DEFAULT FALSE,
-                status VARCHAR(10) DEFAULT 'paused'
+                pin_silent BOOLEAN DEFAULT FALSE
             )
-        """)
-        await conn.execute("""
-            ALTER TABLE scheduled_posts
-            ADD COLUMN IF NOT EXISTS pin_silent BOOLEAN DEFAULT FALSE
         """)
     print("База данных успешно инициализирована.")
 

@@ -40,14 +40,23 @@ router = Router()
 router.message.filter(AdminFilter(), F.chat.type == "private")
 router.callback_query.filter(AdminFilter(), F.message.chat.type == "private")
 
+# admin.py
+
+from aiogram.filters import Command, StateFilter
+# ... другие импорты
+
+# 👇 ИСПРАВЛЕННЫЙ ХЕНДЛЕР
 @router.message(
-    lambda message: not message.text.startswith(('/start', '/admin')),
+    ~Command("start", "admin"), # Ловим все сообщения, которые НЕ являются командами /start или /admin
     ~StateFilter(*ScheduledPost.__all_states__, *OneTimePost.__all_states__, *ChatManagement.__all_states__)
 )
 async def handle_any_admin_message(message: Message, state: FSMContext):
     await state.clear()
+    # Проверяем, есть ли в сообщении текст для логгирования
+    log_text = f"'{message.text}'" if message.text else f"a non-text message (type: {message.content_type})"
+    
     await message.answer("Добро пожаловать в админ-панель!", reply_markup=kb.admin_menu_keyboard())
-    logger.info(f"Admin {message.from_user.id} sent message '{message.text}' and redirected to admin panel")
+    logger.info(f"Admin {message.from_user.id} sent {log_text} and redirected to admin panel")
 
 @router.message(Command("admin"))
 async def cmd_admin_panel(message: Message, state: FSMContext):
