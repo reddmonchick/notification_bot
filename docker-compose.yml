@@ -1,40 +1,50 @@
 version: '3.8'
 
 services:
-  # Сервис базы данных PostgreSQL
-  db:
+  # База данных для первого бота
+  db1:
     image: postgres:15-alpine
-    container_name: poster_db
-    # Переменные окружения для создания БД и пользователя
+    container_name: poster_db1
     env_file:
-      - .env
-    # Пробрасываем порт на локальную машину (опционально, для отладки)
+      - .env.bot1
     ports:
       - "5433:5432"
-    # Сохраняем данные БД между перезапусками
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    # Проверка готовности БД перед запуском бота
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - db1_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  # Сервис Telegram бота
-  bot:
-    container_name: poster_bot
-    # Собираем образ из локального Dockerfile
-    build: .
-    # Передаем все переменные из .env в контейнер
+  # База данных для второго бота
+  db2:
+    image: postgres:15-alpine
+    container_name: poster_db2
     env_file:
-      - .env
-    # Запускаем бота только после того, как БД будет готова
+      - .env.bot2
+    ports:
+      - "5434:5432"
+    volumes:
+      - db2_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Первый бот
+  bot1:
+    build: ./bot
+    container_name: poster_bot1
+    env_file:
+      - .env.bot1
     depends_on:
-      db:
-        condition: service_healthy
+      - db1
+    restart: always
+
+  # Второй бот
+  bot2:
+    build: ./bot
+    container_name: poster_bot2
+    env_file:
+      - .env.bot2
+    depends_on:
+      - db2
     restart: always
 
 volumes:
-  postgres_data:
+  db1_data:
+  db2_data:
