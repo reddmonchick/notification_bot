@@ -1,4 +1,7 @@
 import datetime
+from logging_config import setup_logging
+setup_logging() 
+
 import logging
 import re
 from aiogram import Router, F, Bot
@@ -15,8 +18,7 @@ from ..keyboards import inline as kb
 from ..utils.scheduler import send_broadcast, send_scheduled_post
 from ..callbacks.callbacks import ScheduledPostAction, ChatPostsAction
 
-from logging_config import setup_logging
-setup_logging() 
+
 
 def get_chat_display_name(chat: Chat) -> str:
     """Возвращает лучшее имя для отображения: 'Название (@username)' или другое."""

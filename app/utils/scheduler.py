@@ -1,3 +1,7 @@
+from logging_config import setup_logging
+setup_logging() 
+
+
 import asyncio
 import logging
 from aiogram import Bot
@@ -6,8 +10,6 @@ from typing import List, Optional, Tuple
 
 from ..db import database as db
 
-from logging_config import setup_logging
-setup_logging() 
 
 
 async def _send_and_pin_message(bot: Bot, chat_id: int, text: Optional[str], photo_id: Optional[str], pin_message: bool, pin_silent: bool):
