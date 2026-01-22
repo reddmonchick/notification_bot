@@ -15,12 +15,8 @@ from ..keyboards import inline as kb
 from ..utils.scheduler import send_broadcast, send_scheduled_post
 from ..callbacks.callbacks import ScheduledPostAction, ChatPostsAction
 
-logging.basicConfig(
-    level=logging.INFO,
-    filename='bot.log',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from logging_config import setup_logging
+setup_logging() 
 
 def get_chat_display_name(chat: Chat) -> str:
     """Возвращает лучшее имя для отображения: 'Название (@username)' или другое."""
@@ -56,7 +52,7 @@ async def handle_any_admin_message(message: Message, state: FSMContext):
     log_text = f"'{message.text}'" if message.text else f"a non-text message (type: {message.content_type})"
     
     await message.answer("Добро пожаловать в админ-панель!", reply_markup=kb.admin_menu_keyboard())
-    logger.info(f"Admin {message.from_user.id} sent {log_text} and redirected to admin panel")
+    logging.info(f"Admin {message.from_user.id} sent {log_text} and redirected to admin panel")
 
 @router.message(Command("admin"))
 async def cmd_admin_panel(message: Message, state: FSMContext):
@@ -442,7 +438,7 @@ async def process_pin_decision(callback: CallbackQuery, state: FSMContext, sched
     await callback.message.delete()
     
     data = await state.get_data()
-    logger.info(f"Pin decision - callback.data: {callback.data}, state data: {data}")
+    logging.info(f"Pin decision - callback.data: {callback.data}, state data: {data}")
     
     required_keys = ['job_name', 'text', 'photo_id', 'chat_ids', 'cron_hour', 'cron_minute']
     missing_keys = [key for key in required_keys if key not in data]
@@ -459,7 +455,7 @@ async def process_pin_decision(callback: CallbackQuery, state: FSMContext, sched
     pin_silent = callback.data == "pin_silent"
     data['pin_message'] = pin_message
     data['pin_silent'] = pin_silent
-    logger.info(f"Saving to DB: job_name={data['job_name']}, pin_message={pin_message}, pin_silent={pin_silent}")
+    logging.info(f"Saving to DB: job_name={data['job_name']}, pin_message={pin_message}, pin_silent={pin_silent}")
     
     response = await db.add_scheduled_post(data)
 

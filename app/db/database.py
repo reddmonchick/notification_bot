@@ -4,12 +4,8 @@ from config import settings
 from datetime import datetime
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    filename='bot.log',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from logging_config import setup_logging
+setup_logging() 
 
 pool = None
 
@@ -124,7 +120,7 @@ async def add_scheduled_post(data: Dict[str, Any]) -> str:
     pool = await get_pool()
     async with pool.acquire() as conn:
         try:
-            logger.info(f"Inserting into DB: job_name={data['job_name']}, pin_message={data.get('pin_message', False)}, pin_silent={data.get('pin_silent', False)}")
+            logging.info(f"Inserting into DB: job_name={data['job_name']}, pin_message={data.get('pin_message', False)}, pin_silent={data.get('pin_silent', False)}")
             await conn.execute("""
                 INSERT INTO scheduled_posts (job_name, text, photo_id, chat_ids, cron_hour, cron_minute, pin_message, pin_silent, status)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')

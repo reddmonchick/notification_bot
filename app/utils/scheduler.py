@@ -6,11 +6,8 @@ from typing import List, Optional, Tuple
 
 from ..db import database as db
 
-
-logging.basicConfig(
-    level=logging.DEBUG, 
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+from logging_config import setup_logging
+setup_logging() 
 
 
 async def _send_and_pin_message(bot: Bot, chat_id: int, text: Optional[str], photo_id: Optional[str], pin_message: bool, pin_silent: bool):
