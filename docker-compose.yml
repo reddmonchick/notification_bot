@@ -27,7 +27,7 @@ services:
 
   # Первый бот
   bot1:
-    build: ./bot
+    build: .
     container_name: poster_bot1
     env_file:
       - .env.bot1
@@ -37,7 +37,7 @@ services:
 
   # Второй бот
   bot2:
-    build: ./bot
+    build: .
     container_name: poster_bot2
     env_file:
       - .env.bot2

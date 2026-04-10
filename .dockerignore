@@ -1,0 +1,13 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env*
+postgres_data/
+ozon_feeds/
+temp_images/
+*.zip
+*.rar
+*.log
